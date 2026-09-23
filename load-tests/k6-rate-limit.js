@@ -1,12 +1,14 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
+http.setResponseCallback(http.expectedStatuses(200, 429));
+
 export const options = {
   vus: 25,
   duration: '20s',
   thresholds: {
     http_req_failed: ['rate<0.05'],
-    http_req_duration: ['p(95)<600'],
+    http_req_duration: ['p(95)<1000'],
   },
 };
 

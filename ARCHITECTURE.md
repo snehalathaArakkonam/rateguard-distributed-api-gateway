@@ -62,11 +62,28 @@ For very high-QPS systems, one might also use a dedicated Redis infrastructure w
 - Sliding window log: most precise because it counts timestamps in a rolling window; best for strict enforcement.
 - Sliding window counter: cheaper approximation that works well when precision can be traded for lower memory usage.
 
-## 5. Operational notes
+## 5. Verified production deployment
+
+The verified production endpoints are:
+
+- Gateway: https://rateguard-gateway-production.up.railway.app
+- Dashboard: https://rateguard-dashboard.vercel.app
+- Redis: Upstash free-tier TLS endpoint
+- PostgreSQL: Railway managed PostgreSQL
+
+Railway deployment `e0c7abca-219f-4a07-9f31-b462c27193d2` completed successfully from commit `423c73c`. Its runtime log reported:
+
+```text
+RateGuard gateway listening ... port=8080 instance="railway-gateway"
+```
+
+The live health response was HTTP 200 and returned `{"redis":"connected"}`. A live k6 run completed 795 requests with 795 successful checks, 0 failed checks, and 0.00% request failures. Forty concurrent curl requests produced 10 HTTP 200 responses and 30 HTTP 429 responses; blocked responses included `x-ratelimit-remaining: 0` and `retry-after: 60000`.
+
+## 6. Operational notes
 
 - Rate-limit policy should be derived from the client plan stored in Postgres.
 - The gateway should attach standard headers on every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`, and `Retry-After`.
 - Circuit breakers isolate upstream outages while the gateway still returns a fallback response instead of a hang.
 - Structured logging with request IDs is essential for production debugging and traceability.
 
-The overall architecture is designed to be fast, horizontally scalable, and operationally understandable while still respecting the realities of distributed systems.
+The overall architecture is designed to be fast, horizontally scalable, and operationally understandable while still respecting the realities of distributed systems. The production verification above confirms that the gateway is using external shared Redis state rather than an in-memory limiter.

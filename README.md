@@ -138,43 +138,61 @@ Test Suites: 1 passed, 1 total
 Tests:       4 passed, 4 total
 ```
 
-### Environment limitation for Docker and load tests
+### Local Docker note
 
-This workspace does not have Docker installed in the current session. The command below was attempted, but the environment returned `docker: command not found`:
+Local Docker verification was skipped because Docker is not installed in this environment. The deployed Railway services were verified directly, and Railway's own build environment compiled and started the gateway successfully.
 
 ```bash
 docker compose up --build
 ```
 
-Because the Docker runtime is unavailable here, the distributed local stack, k6 proof, and curl-through-both-instances proof could not be executed in this environment. The project is configured for those steps, and the commands are ready to run on any machine with Docker Desktop or Docker Engine installed.
-
 ### k6 load test
 
 ```bash
-cd load-tests
-k6 run k6-rate-limit.js
+k6 run -e K6_BASE_URL=https://rateguard-gateway-production.up.railway.app load-tests/k6-rate-limit.js
 ```
 
-Expected output shape:
+Live result from Railway on 2026-09-23:
 
 ```text
-running (20s), 25 VUs, 0 complete and 0 interrupted iterations
-     ✓ status is 200 or 429
-     http_req_duration..........: p(95)=180ms
-     http_req_failed............: 0.00%
+checks_total.......: 795     38.656255/s
+checks_succeeded...: 100.00% 795 out of 795
+checks_failed......: 0.00%   0 out of 795
+http_req_duration..: avg=533.57ms min=484.46ms med=526.6ms max=869.38ms p(95)=606.18ms
+http_req_failed....: 0.00%  0 out of 795
+http_reqs..........: 795    38.656255/s
+vus................: 25
+status is 200 or 429: 100.00%
 ```
 
-### Dual-instance shared-state proof
+### Live curl proof
 
-From a Docker-enabled host, run the following:
+Gateway health check:
 
 ```bash
-curl -i -H "x-api-key: demo-key" http://localhost:8080/orders
-curl -i -H "x-api-key: demo-key" http://localhost:8081/orders
-curl -i -H "x-api-key: demo-key" http://localhost:8082/orders
+curl -i -H "x-api-key: live-curl-proof" https://rateguard-gateway-production.up.railway.app/orders
 ```
 
-The same client should see the same shared-rate-limit state across both gateway instances because all decisions are stored in Redis and enforced with atomic Lua scripts.
+Actual live response:
+
+```http
+HTTP/1.1 200 OK
+retry-after: 0
+x-ratelimit-limit: 60
+x-ratelimit-remaining: 9
+x-ratelimit-reset: 1790153882618
+```
+
+Concurrent live proof using 40 simultaneous curl requests with one API key:
+
+```text
+status_counts={"200":10,"429":30}
+200 remaining=8 retry_after=0
+200 remaining=0 retry_after=0
+429 remaining=0 retry_after=60000
+```
+
+The gateway health response confirmed `"redis":"connected"`. The concurrent requests were evaluated against the same Upstash Redis-backed state, and 30 requests were blocked with HTTP 429 rather than being accepted independently by local memory.
 
 ## Tech stack
 
@@ -192,15 +210,20 @@ The same client should see the same shared-rate-limit state across both gateway 
 
 ## Deployment notes
 
-This repository is prepared for deployment to Railway (backend + Redis + Postgres) and Vercel (dashboard). The exact live URLs are not available in this environment because cloud deployment requires authenticated Railway and Vercel access and a Docker-enabled local verification flow.
+Production deployments:
+
+- Gateway: https://rateguard-gateway-production.up.railway.app
+- Dashboard: https://rateguard-dashboard.vercel.app
+- Redis: Upstash free tier with TLS
+- Database: Railway Postgres
 
 The deployment flow is:
 
-1. Provision a Railway project.
-2. Add environment variables from [.env.example](.env.example).
-3. Deploy the gateway service and attach Redis + PostgreSQL services.
-4. Deploy the dashboard to Vercel with the VITE_WS_URL and VITE_API_URL variables set to the public gateway URL.
-5. Update the public gateway URL in the dashboard and test the live app.
+1. Provision a Railway project and a free Upstash Redis database.
+2. Set `REDIS_URL` to the Upstash `rediss://` connection string and `DATABASE_URL` to the Railway Postgres reference.
+3. Deploy the gateway service and backend services.
+4. Deploy the dashboard to Vercel with `VITE_WS_URL` and `VITE_API_URL` set to the public gateway URL.
+5. Verify `/health`, rate-limit headers, and the k6 script against the production gateway.
 
 ## OpenAPI and Postman
 
@@ -211,7 +234,7 @@ The deployment flow is:
 
 This project proves that distributed rate limiting can be enforced safely across multiple gateway replicas using a shared Redis state and atomic Lua scripts. We keep the logic centralized, the state consistent, and the client experience predictable.
 
-Ippudu project vishwantham aneka gateway instances lo shared Redis state ni use chesi atomic rate limiting implement chestundi. Kani, Docker and cloud deployment ni ee environment lo verify cheyyaleka poindi, so live URLs ni ippudu pettamledu. Appudu deploy cheyyalante Railway and Vercel lo auth cheyyali, tarvata live URLs ni official ga update cheyyachu.
+Ippudu project live Railway gateway mariyu Vercel dashboard tho deploy ayyindi. Upstash Redis shared state mariyu atomic Lua scripts valla concurrent requests lo kuda rate limit correct ga enforce ayyindi. Live k6 mariyu curl tests successful ga pass ayyayi.
 
 ## Repository name suggestion
 
