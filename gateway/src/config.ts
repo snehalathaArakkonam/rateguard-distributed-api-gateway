@@ -7,12 +7,14 @@ export const config = {
   appEnv: process.env.APP_ENV ?? 'development',
   logLevel: process.env.LOG_LEVEL ?? 'info',
   redis: {
+    url: process.env.REDIS_URL ?? '',
     host: process.env.REDIS_HOST ?? 'localhost',
     port: Number(process.env.REDIS_PORT ?? 6379),
     db: Number(process.env.REDIS_DB ?? 0),
     password: process.env.REDIS_PASSWORD ?? '',
   },
   postgres: {
+    url: process.env.DATABASE_URL ?? '',
     host: process.env.POSTGRES_HOST ?? 'localhost',
     port: Number(process.env.POSTGRES_PORT ?? 5432),
     database: process.env.POSTGRES_DB ?? 'rateguard',

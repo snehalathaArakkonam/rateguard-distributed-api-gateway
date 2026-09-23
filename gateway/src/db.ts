@@ -2,6 +2,7 @@ import pg, { Pool } from 'pg';
 import { config } from './config.js';
 
 export const pool: Pool = new pg.Pool({
+  ...(config.postgres.url ? { connectionString: config.postgres.url, ssl: config.appEnv === 'production' ? { rejectUnauthorized: false } : undefined } : {}),
   host: config.postgres.host,
   port: config.postgres.port,
   database: config.postgres.database,
