@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: RateGuard API Gateway
+  version: 1.0.0
+  description: Distributed rate-limited API gateway with per-client and per-IP enforcement.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Gateway health
+  /orders:
+    get:
+      summary: Proxy to orders service
+      parameters:
+        - in: header
+          name: x-api-key
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Orders data
+        "429":
+          description: Rate-limited response
+  /inventory:
+    get:
+      summary: Proxy to inventory service
+      parameters:
+        - in: header
+          name: x-api-key
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Inventory data
+        "429":
+          description: Rate-limited response
+  /admin/plans:
+    get:
+      summary: List plans
+      parameters:
+        - in: header
+          name: x-api-key
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: Plans
+  /admin/plans/{apiKey}:
+    put:
+      summary: Update client's plan
+      parameters:
+        - in: header
+          name: x-api-key
+          schema:
+            type: string
+          required: true
+        - in: path
+          name: apiKey
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tier:
+                  type: string
+                  enum: [FREE, PRO, ENTERPRISE]
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Updated client plan

@@ -1,0 +1,88 @@
+{
+  "info": {
+    "name": "RateGuard API Gateway",
+    "schema": "https://schema.getpostman.com/json/collection/v1.1.0/collection.json",
+    "description": "Collection for RateGuard distributed API gateway"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8080/health",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["health"]
+        }
+      }
+    },
+    {
+      "name": "Orders API",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "test-client-free"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/orders",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["orders"]
+        }
+      }
+    },
+    {
+      "name": "Inventory API",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "test-client-pro"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8080/inventory",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["inventory"]
+        }
+      }
+    },
+    {
+      "name": "Update Plan",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "x-api-key",
+            "value": "admin-key-123"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tier\": \"PRO\",\n  \"name\": \"Updated Demo\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/admin/plans/test-client-free",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["admin", "plans", "test-client-free"]
+        }
+      }
+    }
+  ]
+}
